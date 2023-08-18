@@ -104,7 +104,7 @@ void setup() {
   wifiConnect();
 
   //connect mqtt
-  // client.setServer(mqttServer,port);
+  client.setServer(mqttServer,port);
   // mqttReconnect();
   LCD.init();
   LCD.backlight();
@@ -126,6 +126,10 @@ void setup() {
 
 void loop() {
   curTime = millis();
+
+  mqttReconnect();
+  client.setCallback(mqtt_callback);
+
   if (curTime - lastTime > 1000) {
     //read Sensor data
     readSensorData();
@@ -136,6 +140,8 @@ void loop() {
     if (isDiff) {
       //handle condition of sensor here
       Serial.printf("%.1f %.1f\n", curData.humidity, curData.temperature);
+      Serial.println(curStatus.waterPump);
+      publishToConsumer();
     }
   }
 
@@ -143,7 +149,11 @@ void loop() {
   //roof motor
   if( myStepper.distanceToGo() != 0 ) {
     myStepper.run();
+
   }
+
+
+
 }
 
 bool operator==(SensorsData& a, SensorsData& b){
@@ -173,6 +183,13 @@ void mqtt_callback(char* topic, byte* payload, uint32_t len){
   //Processing topic here
 
   //Processing msg from node_red here
+
+  Serial.print(topic);
+  String strMessage;
+  for(int  i = 0; i<len; i++){
+    strMessage += (char)payload[i];
+  }
+  Serial.println(strMessage);
 }
 
 void publishToConsumer() //publish msg to Consumer
@@ -238,7 +255,7 @@ void readSensorData() {
     TempAndHumidity tmp = dhtSensor.getTempAndHumidity();
     curData.humidity = tmp.humidity;
     curData.temperature = tmp.temperature;
-    curData.moiser = analogRead(P_DoAmDat);
+    curData.moiser = map(analogRead(P_DoAmDat), 0, 1023, 0, 25);
     curData.light = digitalRead(P_AnhSang);
     curData.rain = digitalRead(P_Mua);
 }
