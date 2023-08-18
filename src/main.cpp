@@ -318,16 +318,75 @@ bool operator!=(DeviceStatus& a, DeviceStatus& b) {
 }
 
 void CN_TuoiNuoc() {
-  Serial.println("Tui chua duoc cai dat. Hay cai dat tui di!");
+  if(newStatus.microWaterPump == 0) {
+    if ((newStatus.rain == 0) && (newStatus.moiser < 55)){
+      if ((newStatus.temperature > 30) && (newStatus.light == 1)){
+        newStatus.waterPump == 1;
+      }
+    }
+    else if ((newStatus.rain == 0) && (newStatus.moiser < 50)){
+      if ((newStatus.temperature > 25) && (newStatus.light == 0)){
+        newStatus.waterPump == 1;
+      }
+    }
+    else if((newStatus.rain == 0) && (newStatus.moiser < 50)){
+      newStatus.waterPump == 1;
+    }
+    else newStatus.waterPump == 0;
+  }
 }
+
 void CN_PhunSuong() {
-  Serial.println("Tui chua duoc cai dat. Hay cai dat tui di!");
+  if(newStatus.waterPump == 0) {
+    if ((newStatus.humidity < 70) && ((newStatus.rain == 0))){
+      if ((newStatus.temperature > 30) && (newStatus.light == 1)){
+        newStatus.microWaterPump = 1;
+      }
+      else newStatus.microWaterPump = 0;
+    }
+    else if ((newStatus.humidity < 65) && ((newStatus.rain == 0))) {
+      if ((newStatus.temperature > 25) && (newStatus.light == 0)){
+        newStatus.microWaterPump = 1;
+      }
+      else newStatus.microWaterPump = 0;
+    }
+    else if (newStatus.rain == 0){
+      if (newStatus.humidity < 65){
+        newStatus.microWaterPump = 1;
+      }
+      else newStatus.microWaterPump = 0;
+    }
+    else newStatus.microWaterPump = 0;
+  }
 }
+
 void CN_DenSuoi() {
-  Serial.println("Tui chua duoc cai dat. Hay cai dat tui di!");
+  if ((newStatus.temperature < 20) && (newStatus.light == 1)){
+    newStatus.heatLight = 1;
+  }
+  else if((newStatus.temperature < 16) && (newStatus.light == 0)){
+    newStatus.heatLight = 1;
+  }
+  else newStatus.heatLight = 0;
 }
+
 void CN_ManChe() {
-  Serial.println("Tui chua duoc cai dat. Hay cai dat tui di!");
+  if(newStatus.light == 0){
+    newStatus.roofTop = 0;
+  }
+  else if((newStatus.light == 1) && (newStatus.temperature > 30)){
+    newStatus.roofTop = 0;
+  }
+  else if ((newStatus.rain == 1) && (newStatus.moiser > 70)){
+    newStatus.roofTop = 0;
+  }
+  else if((newStatus.light == 1) && (newStatus.temperature < 20)){
+    newStatus.roofTop = 1;
+  }
+  else if ((newStatus.rain == 1) && (newStatus.moiser < 50)){
+    newStatus.roofTop = 1;
+  }
+  else newStatus.roofTop = 0;
 }
 
 void actionBomNuoc() {
