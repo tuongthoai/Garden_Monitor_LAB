@@ -60,6 +60,21 @@ struct SensorsData {
   friend bool operator!=(SensorsData& a, SensorsData& b);
 };
 
+struct DeviceStatus {
+  uint8_t waterPump;
+  uint8_t microWaterPump;
+  uint8_t heatLight;
+
+  DeviceStatus() {
+    waterPump = 0;
+    microWaterPump = 0;
+    heatLight = 0;
+  }
+
+  friend bool operator==(DeviceStatus& a, DeviceStatus& b);
+  friend bool operator!=(DeviceStatus& a, DeviceStatus& b);
+};
+
 // setup wifi
 void wifiConnect();
 //from mqtt to ESP32
@@ -68,10 +83,12 @@ void mqttReconnect();
 //global variables
 uint64_t curTime = 0, lastTime = 0;
 SensorsData lastData,curData;
+DeviceStatus curStatus, newStatus;
 bool isDiff;
 
+// MQTT functionality
 void publishToConsumer(); //publish msg to Consumer
-
+void mqtt_callback(char* topic, byte* payload, uint32_t len);
 // for open and closing 
 void openRainDefender();  
 void closeRainDefender();
@@ -116,10 +133,15 @@ void loop() {
     isDiff = curData != lastData;
     
     if (isDiff) {
-      Serial.println(isDiff);
-      lastData = curData;
-      Serial.printf("%.2f %.2f\n", curData.humidity, curData.temperature);
+      //handle condition of sensor here
+
     }
+  }
+
+  //handle status of output devices
+  //roof motor
+  if( myStepper.distanceToGo() != 0 ) {
+    myStepper.run();
   }
 }
 
@@ -128,6 +150,28 @@ bool operator==(SensorsData& a, SensorsData& b){
 }
 bool operator!=(SensorsData& a, SensorsData& b){
   return !(a == b);
+}
+
+bool operator==(DeviceStatus& a, DeviceStatus& b) {
+  return (a.waterPump == b.waterPump) && (a.heatLight == b.heatLight) && (a.microWaterPump == b.microWaterPump);
+}
+bool operator!=(DeviceStatus& a, DeviceStatus& b) {
+ return !(a == b);
+}
+
+void mqtt_callback(char* topic, byte* payload, uint32_t len){
+  // Serial.print("Message received on topic: ");
+  // Serial.println(topic);
+
+  // Serial.print("Payload: ");
+  // for (int i = 0; i < len; i++) {
+  //   Serial.print((char)payload[i]);
+  // }
+  // Serial.println();
+
+  //Processing topic here
+
+  //Processing msg from node_red here
 }
 
 void publishToConsumer() //publish msg to Consumer
@@ -153,6 +197,15 @@ void publishToConsumer() //publish msg to Consumer
 
   sprintf(buffer, "%d", rain);
   client.publish("21127174/rain",buffer);
+
+  sprintf(buffer, "%d", curStatus.heatLight);
+  client.publish("21127174/heatLight",buffer);
+
+  sprintf(buffer, "%d", curStatus.waterPump);
+  client.publish("21127174/waterPump",buffer);
+
+  sprintf(buffer, "%d", curStatus.microWaterPump);
+  client.publish("21127174/microWaterPump",buffer);
 }
 
 //from mqtt to ESP32
