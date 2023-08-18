@@ -26,14 +26,16 @@
 
 // Define motor interface type
 #define motorInterfaceType 1
-//define mqtt
-const char* mqttServer = "test.mosquitto.org";
-int port = 1883;
-WiFiClient espClient;
-PubSubClient client(espClient);
+
 //define wifi
+const char* mqttServer = "test.mosquitto.org";
 const char* ssid = "Wokwi-GUEST";
 const char* password = "";
+
+//define mqtt
+const uint16_t port = 1883;
+WiFiClient espClient;
+PubSubClient client(espClient);
 
 // Creates an instance
 AccelStepper myStepper(motorInterfaceType, stepPin, dirPin);
@@ -99,7 +101,6 @@ void writeLCD(uint8_t page);
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(115200);
-  
   Serial.print("Connecting to Wifi");
   wifiConnect();
 
@@ -136,14 +137,14 @@ void loop() {
 
     //compare value if has different
     isDiff = curData != lastData;
-    
+  }
+
     if (isDiff) {
       //handle condition of sensor here
-      Serial.printf("%.1f %.1f\n", curData.humidity, curData.temperature);
-      Serial.println(curStatus.waterPump);
+      Serial.printf("%.1f %.1f %d %d %d\n", curData.humidity, curData.temperature, curData.moiser, curData.light, curData.rain);
+      lastData = curData;
       publishToConsumer();
     }
-  }
 
   //handle status of output devices
   //roof motor
@@ -152,22 +153,6 @@ void loop() {
 
   }
 
-
-
-}
-
-bool operator==(SensorsData& a, SensorsData& b){
-  return (a.rain == b.rain) && (a.moiser == b.moiser) && (a.light == b.light) && isClose(a.temperature, b.temperature) && isClose(a.humidity, b.humidity);
-}
-bool operator!=(SensorsData& a, SensorsData& b){
-  return !(a == b);
-}
-
-bool operator==(DeviceStatus& a, DeviceStatus& b) {
-  return (a.waterPump == b.waterPump) && (a.heatLight == b.heatLight) && (a.microWaterPump == b.microWaterPump);
-}
-bool operator!=(DeviceStatus& a, DeviceStatus& b) {
- return !(a == b);
 }
 
 void mqtt_callback(char* topic, byte* payload, uint32_t len){
@@ -279,3 +264,17 @@ void writeLCD(uint8_t page){
 	// myStepper.run();
   // myStepper.run();
 */
+
+bool operator==(SensorsData& a, SensorsData& b){
+  return (a.rain == b.rain) && (a.moiser == b.moiser) && (a.light == b.light) && isClose(a.temperature, b.temperature) && isClose(a.humidity, b.humidity);
+}
+bool operator!=(SensorsData& a, SensorsData& b){
+  return !(a == b);
+}
+
+bool operator==(DeviceStatus& a, DeviceStatus& b) {
+  return (a.waterPump == b.waterPump) && (a.heatLight == b.heatLight) && (a.microWaterPump == b.microWaterPump);
+}
+bool operator!=(DeviceStatus& a, DeviceStatus& b) {
+ return !(a == b);
+}
