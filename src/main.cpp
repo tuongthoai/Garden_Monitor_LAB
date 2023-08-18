@@ -5,6 +5,15 @@
 #include <WiFi.h>
 #include "PubSubClient.h"
 
+#define Max_Humidity 80
+#define Min_Humidity 60
+#define Max_Temperature_Day 30
+#define Min_Temperature_Day 20
+#define Max_Temperature_Night 25
+#define Min_Temperature_Night 15
+#define Max_Moiser 70
+#define Min_Moiser 55
+
 #define P_BomNuoc 27
 #define P_PhunSuong 26
 #define P_NhietDoKK 25
@@ -308,18 +317,18 @@ bool operator!=(DeviceStatus& a, DeviceStatus& b) {
 }
 
 void CN_TuoiNuoc() {
-  if(newStatus.microWaterPump == 0) {
-    if ((curData.rain == 0) && (curData.moiser < 55)){
-      if ((curData.temperature > 30) && (curData.light == 1)){
+  if(curStatus.microWaterPump == 0) {
+    if ((curData.rain == 0) && (curData.moiser < Min_Moiser)){
+      if ((curData.temperature > Max_Temperature_Day) && (curData.light == 1)){
         newStatus.waterPump == 1;
       }
     }
-    else if ((curData.rain == 0) && (curData.moiser < 50)){
-      if ((curData.temperature > 25) && (curData.light == 0)){
-        newStatus.waterPump == 1;
+    else if ((curData.rain == 0) && (curData.moiser < Min_Moiser)){
+      if ((curData.temperature > Max_Temperature_Night) && (curData.light == 0)){
+        newStatus.waterPump == 1; 
       }
     }
-    else if((curData.rain == 0) && (curData.moiser < 50)){
+    else if((curData.rain == 0) && (curData.moiser < Min_Moiser)){
       newStatus.waterPump == 1;
     }
     else newStatus.waterPump == 0;
@@ -327,21 +336,21 @@ void CN_TuoiNuoc() {
 }
 
 void CN_PhunSuong() {
-  if(newStatus.waterPump == 0) {
-    if ((curData.humidity < 70) && ((curData.rain == 0))){
-      if ((curData.temperature > 30) && (curData.light == 1)){
+  if(curStatus.waterPump == 0) {
+    if ((curData.humidity < Max_Humidity) && ((curData.rain == 0))){
+      if ((curData.temperature > Max_Temperature_Day) && (curData.light == 1)){
         newStatus.microWaterPump = 1;
       }
       else newStatus.microWaterPump = 0;
     }
-    else if ((curData.humidity < 65) && ((curData.rain == 0))) {
-      if ((curData.temperature > 25) && (curData.light == 0)){
-        newStatus.microWaterPump = 1;
+    else if ((curData.humidity < Min_Humidity) && ((curData.rain == 0))) {
+      if ((curData.temperature > Max_Temperature_Night) && (curData.light == 0)){
+        newStatus.microWaterPump = 1; 
       }
       else newStatus.microWaterPump = 0;
     }
     else if (curData.rain == 0){
-      if (curData.humidity < 65){
+      if (curData.humidity < Min_Humidity){
         newStatus.microWaterPump = 1;
       }
       else newStatus.microWaterPump = 0;
@@ -351,10 +360,10 @@ void CN_PhunSuong() {
 }
 
 void CN_DenSuoi() {
-  if ((curData.temperature < 20) && (curData.light == 1)){
+  if ((curData.temperature < Min_Temperature_Day) && (curData.light == 1)){
     newStatus.heatLight = 1;
   }
-  else if((curData.temperature < 16) && (curData.light == 0)){
+  else if((curData.temperature < Min_Temperature_Night) && (curData.light == 0)){
     newStatus.heatLight = 1;
   }
   else newStatus.heatLight = 0;
@@ -364,16 +373,16 @@ void CN_ManChe() {
   if(curData.light == 0){
     newStatus.roofTop = 0;
   }
-  else if((curData.light == 1) && (curData.temperature > 30)){
+  else if((curData.light == 1) && (curData.temperature > Max_Temperature_Day)){
     newStatus.roofTop = 0;
   }
-  else if ((curData.rain == 1) && (curData.moiser > 70)){
+  else if ((curData.rain == 1) && (curData.moiser > Max_Moiser)){
     newStatus.roofTop = 0;
   }
-  else if((curData.light == 1) && (curData.temperature < 20)){
+  else if((curData.light == 1) && (curData.temperature < Min_Temperature_Day)){
     newStatus.roofTop = 1;
   }
-  else if ((curData.rain == 1) && (curData.moiser < 50)){
+  else if ((curData.rain == 1) && (curData.moiser < Min_Moiser)){
     newStatus.roofTop = 1;
   }
   else newStatus.roofTop = 0;
