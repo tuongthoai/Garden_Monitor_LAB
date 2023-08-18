@@ -188,8 +188,6 @@ void loop() {
   //roof motor
   if( myStepper.distanceToGo() != 0 ) {
     myStepper.run();
-  } else {
-    curStatus.roofTop = 1 - curStatus.roofTop;
   }
 }
 
@@ -292,16 +290,8 @@ void closeRainDefender() {
 }
 
 void writeLCD(uint8_t page){
-
+  
 }
-/*
-  // if (myStepper.distanceToGo() == 0) 
-	// 	myStepper.moveTo(-myStepper.currentPosition());
-
-	// // Move the motor one step
-	// myStepper.run();
-  // myStepper.run();
-*/
 
 bool operator==(SensorsData& a, SensorsData& b){
   return (a.rain == b.rain) && (a.moiser == b.moiser) && (a.light == b.light) && isClose(a.temperature, b.temperature) && isClose(a.humidity, b.humidity);
