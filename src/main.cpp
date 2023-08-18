@@ -317,46 +317,42 @@ bool operator!=(DeviceStatus& a, DeviceStatus& b) {
 }
 
 void CN_TuoiNuoc() {
-  if(curStatus.microWaterPump == 0) {
-    if ((curData.rain == 0) && (curData.moiser < Min_Moiser)){
-      if ((curData.temperature > Max_Temperature_Day) && (curData.light == 1)){
-        newStatus.waterPump == 1;
-      }
-    }
-    else if ((curData.rain == 0) && (curData.moiser < Min_Moiser)){
-      if ((curData.temperature > Max_Temperature_Night) && (curData.light == 0)){
-        newStatus.waterPump == 1; 
-      }
-    }
-    else if((curData.rain == 0) && (curData.moiser < Min_Moiser)){
+  if ((curData.rain == 0) && (curData.moiser < Min_Moiser)){
+    if ((curData.temperature > Max_Temperature_Day) && (curData.light == 1)){
       newStatus.waterPump == 1;
     }
-    else newStatus.waterPump == 0;
   }
+  else if ((curData.rain == 0) && (curData.moiser < Min_Moiser)){
+    if ((curData.temperature > Max_Temperature_Night) && (curData.light == 0)){
+      newStatus.waterPump == 1; 
+    }
+  }
+  else if((curData.rain == 0) && (curData.moiser < Min_Moiser)){
+    newStatus.waterPump == 1;
+  }
+  else newStatus.waterPump == 0;
 }
 
 void CN_PhunSuong() {
-  if(curStatus.waterPump == 0) {
-    if ((curData.humidity < Max_Humidity) && ((curData.rain == 0))){
-      if ((curData.temperature > Max_Temperature_Day) && (curData.light == 1)){
-        newStatus.microWaterPump = 1;
-      }
-      else newStatus.microWaterPump = 0;
-    }
-    else if ((curData.humidity < Min_Humidity) && ((curData.rain == 0))) {
-      if ((curData.temperature > Max_Temperature_Night) && (curData.light == 0)){
-        newStatus.microWaterPump = 1; 
-      }
-      else newStatus.microWaterPump = 0;
-    }
-    else if (curData.rain == 0){
-      if (curData.humidity < Min_Humidity){
-        newStatus.microWaterPump = 1;
-      }
-      else newStatus.microWaterPump = 0;
+  if ((curData.humidity < Max_Humidity) && ((curData.rain == 0))){
+    if ((curData.temperature > Max_Temperature_Day) && (curData.light == 1)){
+      newStatus.microWaterPump = 1;
     }
     else newStatus.microWaterPump = 0;
   }
+  else if ((curData.humidity < Min_Humidity) && ((curData.rain == 0))) {
+    if ((curData.temperature > Max_Temperature_Night) && (curData.light == 0)){
+      newStatus.microWaterPump = 1; 
+    }
+    else newStatus.microWaterPump = 0;
+  }
+  else if (curData.rain == 0){
+    if (curData.humidity < Min_Humidity){
+      newStatus.microWaterPump = 1;
+    }
+    else newStatus.microWaterPump = 0;
+  }
+  else newStatus.microWaterPump = 0;
 }
 
 void CN_DenSuoi() {
