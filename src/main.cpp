@@ -319,17 +319,17 @@ bool operator!=(DeviceStatus& a, DeviceStatus& b) {
 
 void CN_TuoiNuoc() {
   if(newStatus.microWaterPump == 0) {
-    if ((newStatus.rain == 0) && (newStatus.moiser < 55)){
-      if ((newStatus.temperature > 30) && (newStatus.light == 1)){
+    if ((curData.rain == 0) && (curData.moiser < 55)){
+      if ((curData.temperature > 30) && (curData.light == 1)){
         newStatus.waterPump == 1;
       }
     }
-    else if ((newStatus.rain == 0) && (newStatus.moiser < 50)){
-      if ((newStatus.temperature > 25) && (newStatus.light == 0)){
+    else if ((curData.rain == 0) && (curData.moiser < 50)){
+      if ((curData.temperature > 25) && (curData.light == 0)){
         newStatus.waterPump == 1;
       }
     }
-    else if((newStatus.rain == 0) && (newStatus.moiser < 50)){
+    else if((curData.rain == 0) && (curData.moiser < 50)){
       newStatus.waterPump == 1;
     }
     else newStatus.waterPump == 0;
@@ -338,20 +338,20 @@ void CN_TuoiNuoc() {
 
 void CN_PhunSuong() {
   if(newStatus.waterPump == 0) {
-    if ((newStatus.humidity < 70) && ((newStatus.rain == 0))){
-      if ((newStatus.temperature > 30) && (newStatus.light == 1)){
+    if ((curData.humidity < 70) && ((curData.rain == 0))){
+      if ((curData.temperature > 30) && (curData.light == 1)){
         newStatus.microWaterPump = 1;
       }
       else newStatus.microWaterPump = 0;
     }
-    else if ((newStatus.humidity < 65) && ((newStatus.rain == 0))) {
-      if ((newStatus.temperature > 25) && (newStatus.light == 0)){
+    else if ((curData.humidity < 65) && ((curData.rain == 0))) {
+      if ((curData.temperature > 25) && (curData.light == 0)){
         newStatus.microWaterPump = 1;
       }
       else newStatus.microWaterPump = 0;
     }
-    else if (newStatus.rain == 0){
-      if (newStatus.humidity < 65){
+    else if (curData.rain == 0){
+      if (curData.humidity < 65){
         newStatus.microWaterPump = 1;
       }
       else newStatus.microWaterPump = 0;
@@ -361,29 +361,29 @@ void CN_PhunSuong() {
 }
 
 void CN_DenSuoi() {
-  if ((newStatus.temperature < 20) && (newStatus.light == 1)){
+  if ((curData.temperature < 20) && (curData.light == 1)){
     newStatus.heatLight = 1;
   }
-  else if((newStatus.temperature < 16) && (newStatus.light == 0)){
+  else if((curData.temperature < 16) && (curData.light == 0)){
     newStatus.heatLight = 1;
   }
   else newStatus.heatLight = 0;
 }
 
 void CN_ManChe() {
-  if(newStatus.light == 0){
+  if(curData.light == 0){
     newStatus.roofTop = 0;
   }
-  else if((newStatus.light == 1) && (newStatus.temperature > 30)){
+  else if((curData.light == 1) && (curData.temperature > 30)){
     newStatus.roofTop = 0;
   }
-  else if ((newStatus.rain == 1) && (newStatus.moiser > 70)){
+  else if ((curData.rain == 1) && (curData.moiser > 70)){
     newStatus.roofTop = 0;
   }
-  else if((newStatus.light == 1) && (newStatus.temperature < 20)){
+  else if((curData.light == 1) && (curData.temperature < 20)){
     newStatus.roofTop = 1;
   }
-  else if ((newStatus.rain == 1) && (newStatus.moiser < 50)){
+  else if ((curData.rain == 1) && (curData.moiser < 50)){
     newStatus.roofTop = 1;
   }
   else newStatus.roofTop = 0;
