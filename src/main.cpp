@@ -9,7 +9,6 @@
 #define P_PhunSuong 26
 #define P_NhietDoKK 25
 #define P_DoAmDat 33
-#define P_Servo 13
 #define P_DenSuoi 32
 #define P_AnhSang 35
 #define P_Mua 34
@@ -80,15 +79,16 @@ void wifiConnect();
 //from mqtt to ESP32
 void mqttReconnect();
 
+// MQTT functionality
+void publishToConsumer(); //publish msg to Consumer
+void mqtt_callback(char* topic, byte* payload, uint32_t len);
+
 //global variables
 uint64_t curTime = 0, lastTime = 0;
 SensorsData lastData,curData;
 DeviceStatus curStatus, newStatus;
 bool isDiff;
 
-// MQTT functionality
-void publishToConsumer(); //publish msg to Consumer
-void mqtt_callback(char* topic, byte* payload, uint32_t len);
 // for open and closing 
 void openRainDefender();  
 void closeRainDefender();
@@ -110,13 +110,14 @@ void setup() {
   LCD.backlight();
   LCD.setCursor(0, 0);
   LCD.print("Hello world!");
-  // servo.attach(P_Servo, 500, 2400);
   dhtSensor.setup(P_NhietDoKK, DHTesp::DHT22);
 
-  pinMode(P_NhietDoKK,INPUT);
   pinMode(P_DoAmDat, INPUT);
+  pinMode(P_Mua, INPUT);
+  pinMode(P_AnhSang, INPUT);
   pinMode(P_BomNuoc, OUTPUT);
   pinMode(P_PhunSuong, OUTPUT);
+  pinMode(P_DenSuoi, OUTPUT);
 
   myStepper.setMaxSpeed(1000);
 	myStepper.setAcceleration(100);
@@ -134,7 +135,7 @@ void loop() {
     
     if (isDiff) {
       //handle condition of sensor here
-
+      Serial.printf("%.1f %.1f\n", curData.humidity, curData.temperature);
     }
   }
 
@@ -191,9 +192,6 @@ void publishToConsumer() //publish msg to Consumer
 
   sprintf(buffer, "%d", moiser);
   client.publish("21127174/moiser",buffer);
-
-  sprintf(buffer, "%d", light);
-  client.publish("21127174/light",buffer);
 
   sprintf(buffer, "%d", rain);
   client.publish("21127174/rain",buffer);
