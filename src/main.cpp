@@ -47,7 +47,7 @@ struct SensorsData {
   float humidity;
   uint16_t moiser;
   uint16_t rain;
-  uint8_t light;
+  uint16_t light;
 
   SensorsData(){
     temperature = 0;
@@ -65,11 +65,13 @@ struct DeviceStatus {
   uint8_t waterPump;
   uint8_t microWaterPump;
   uint8_t heatLight;
+  uint8_t roofTop;
 
   DeviceStatus() {
     waterPump = 0;
     microWaterPump = 0;
     heatLight = 0;
+    roofTop = 0;
   }
 
   friend bool operator==(DeviceStatus& a, DeviceStatus& b);
@@ -98,6 +100,20 @@ bool isClose(float& a, float& b);
 void readSensorData();
 void writeLCD(uint8_t page);
 
+// functional handling
+void CN_TuoiNuoc();
+void CN_PhunSuong();
+void CN_DenSuoi();
+void CN_ManChe();
+
+void actionBomNuoc();
+void actionPhunSuong();
+void actionDenSuoi();
+void actionManChe();
+
+void (*functionalPointers[])() = {CN_TuoiNuoc, CN_PhunSuong, CN_DenSuoi, CN_ManChe};
+void (*actionPointers[])() = {actionBomNuoc, actionDenSuoi, actionManChe, actionPhunSuong};
+
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(115200);
@@ -105,8 +121,9 @@ void setup() {
   wifiConnect();
 
   //connect mqtt
-  client.setServer(mqttServer,port);
-  // mqttReconnect();
+  // client.setServer(mqttServer,port);
+  // client.setCallback(mqtt_callback);
+
   LCD.init();
   LCD.backlight();
   LCD.setCursor(0, 0);
@@ -125,34 +142,55 @@ void setup() {
 	myStepper.setSpeed(100);
 }
 
+void CN_TuoiNuoc();
+void CN_PhunSuong();
+void CN_DenSuoi();
+void CN_ManChe();
+
 void loop() {
   curTime = millis();
 
-  mqttReconnect();
-  client.setCallback(mqtt_callback);
+  // mqttReconnect();
+  // client.loop();
 
-  if (curTime - lastTime > 1000) {
+  if (curTime - lastTime > 500) {
     //read Sensor data
     readSensorData();
 
     //compare value if has different
     isDiff = curData != lastData;
+    lastTime = curTime;
   }
 
-    if (isDiff) {
-      //handle condition of sensor here
-      Serial.printf("%.1f %.1f %d %d %d\n", curData.humidity, curData.temperature, curData.moiser, curData.light, curData.rain);
-      lastData = curData;
-      publishToConsumer();
+  if (isDiff) {
+    //handle condition of sensor here
+    // Serial.printf("%.1f %.1f %d %d %d\n", curData.humidity, curData.temperature, curData.moiser, curData.light, curData.rain);
+    lastData = curData;
+    // publishToConsumer();
+  }
+
+  if (newStatus != curStatus) {
+    // Xu ly cac trang thai cua thiet bi output theo tung chuc nang
+    for (int i = 0; i < 4; ++i) {
+      functionalPointers[i]();
     }
+
+    // Tien hanh thay doi trang thai cua cac thiet bi output theo trang thai da tinh toan
+    for(int i = 0; i < 4; ++i) {
+      actionPointers[i]();
+    }
+
+    // Cap nhat lai trang thai hien tai la trang thai da tinh toan
+    curStatus = newStatus;
+  }
 
   //handle status of output devices
   //roof motor
   if( myStepper.distanceToGo() != 0 ) {
     myStepper.run();
-
+  } else {
+    curStatus.roofTop = 1 - curStatus.roofTop;
   }
-
 }
 
 void mqtt_callback(char* topic, byte* payload, uint32_t len){
@@ -246,11 +284,11 @@ void readSensorData() {
 }
 
 void openRainDefender() {
-
+  myStepper.moveTo(FULL_OPEN);
 }
 
 void closeRainDefender() {
-
+  myStepper.moveTo(FULL_CLOSE);
 }
 
 void writeLCD(uint8_t page){
@@ -277,4 +315,42 @@ bool operator==(DeviceStatus& a, DeviceStatus& b) {
 }
 bool operator!=(DeviceStatus& a, DeviceStatus& b) {
  return !(a == b);
+}
+
+void CN_TuoiNuoc() {
+  Serial.println("Tui chua duoc cai dat. Hay cai dat tui di!");
+}
+void CN_PhunSuong() {
+  Serial.println("Tui chua duoc cai dat. Hay cai dat tui di!");
+}
+void CN_DenSuoi() {
+  Serial.println("Tui chua duoc cai dat. Hay cai dat tui di!");
+}
+void CN_ManChe() {
+  Serial.println("Tui chua duoc cai dat. Hay cai dat tui di!");
+}
+
+void actionBomNuoc() {
+  if (curStatus.waterPump != newStatus.waterPump) {
+    digitalWrite(P_BomNuoc, (newStatus.waterPump > 0));
+  }
+}
+void actionPhunSuong() {
+  if (curStatus.microWaterPump != newStatus.microWaterPump) {
+    digitalWrite(P_BomNuoc, (newStatus.microWaterPump > 0));
+  }
+}
+void actionDenSuoi() {
+  if (curStatus.heatLight != newStatus.heatLight) {
+    digitalWrite(P_BomNuoc, (newStatus.heatLight > 0));
+  }
+}
+void actionManChe() {
+  if (curStatus.roofTop) {
+    if (newStatus.roofTop) {
+      openRainDefender();
+    } else {
+      closeRainDefender();
+    }
+  }
 }
