@@ -51,6 +51,12 @@ PubSubClient client(espClient);
 const unsigned long channelId = 2245470;
 const char* writeAPI = "CC4W6GQVHGJDBM4F";
 const char* readAPI = "5HUF2J6V10OP77ZX";
+WiFiClient TS_client;
+
+//IFTTT
+const char* host = "maker.ifttt.com";
+const char* request = "/trigger/values_changed/with/key/XEG0gX_3bpvefCvAQC6VG";
+int port_IFTTT = 80;
 
 // Creates an instance
 AccelStepper myStepper(motorInterfaceType, stepPin, dirPin);
@@ -129,13 +135,17 @@ void actionManChe();
 void (*functionalPointers[])() = {CN_TuoiNuoc, CN_PhunSuong, CN_DenSuoi, CN_ManChe};
 void (*actionPointers[])() = {actionBomNuoc, actionDenSuoi, actionManChe, actionPhunSuong};
 
+//ThingSpeak
+void sendRequest();
+void sendMessage();
+
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(115200);
   Serial.print("Connecting to Wifi");
   wifiConnect();
 
-  // connect mqtt
+  //connect mqtt
   // client.setServer(mqttServer,port);
   // client.setCallback(mqtt_callback);
 
@@ -153,6 +163,9 @@ void setup() {
   myStepper.setMaxSpeed(1000);
 	myStepper.setAcceleration(100);
 	myStepper.setSpeed(100);
+
+  //ThingSpeak
+  ThingSpeak.begin(TS_client);
 }
 
 void loop() {
@@ -174,9 +187,16 @@ void loop() {
     //handle condition of sensor here
     // Serial.printf("%.1f %.1f %d %d %d\n", curData.humidity, curData.temperature, curData.moiser, curData.light, curData.rain);
     lastData = curData;
+    // publishToConsumer();
+  }
+
+  if (newStatus != curStatus) {
+    // Xu ly cac trang thai cua thiet bi output theo tung chuc nang
     for (int i = 0; i < 4; ++i) {
       functionalPointers[i]();
     }
+
+
     writeLCD();
 
     if (newStatus != curStatus) {
@@ -194,14 +214,44 @@ void loop() {
     Serial.printf("Data AmKK %.1f T* %.1f AmDat %d Mua %d Sang %d\n", curData.humidity, curData.temperature, curData.moiser, curData.rain, curData.light);
   }
 
+  if (newStatus != curStatus) {
+    // Tien hanh thay doi trang thai cua cac thiet bi output theo trang thai da tinh toan
+    for(int i = 0; i < 4; ++i) {
+      actionPointers[i]();
+    }
 
+    // Cap nhat lai trang thai hien tai la trang thai da tinh toan
+    curStatus = newStatus;
+  }
 
   //handle status of output devices
   //roof motor
   if( myStepper.distanceToGo() != 0 ) {
     myStepper.run();
   }
-
+  
+  //ThingSpeak
+  ThingSpeak.setField(1, curData.temperature);
+  ThingSpeak.setField(2, curData.moiser);
+  ThingSpeak.setField(3, curData.humidity);
+  int ret = ThingSpeak.writeFields(channelId, writeAPI);
+  if(ret == 200){
+    Serial.println("Successful");
+  }
+  else{
+    Serial.println("Error");
+  }
+  float temp = ThingSpeak.readLongField(channelId, 1, readAPI);
+  ret = ThingSpeak.getLastReadStatus();
+  if (ret == 200){
+    char buffer[20];
+    sprintf(buffer, "%d", int(temp));
+    client.publish("21127174/cloud",buffer);
+  }
+  else{
+    Serial.println("Unable to read channel");
+  }
+  sendMessage();
   // delay(1000);
 }
 
@@ -248,6 +298,9 @@ void mqttReconnect(){
     Serial.print("Attempting MQTT connection...");
     if(client.connect("21127174")){
       Serial.println("connected");
+      client.subscribe("21127174/microWaterPump_subcribe");
+      client.subscribe("21127174/microWaterPump_subcribe");
+      client.subscribe("21127174/microWaterPump_subcribe");
       client.subscribe("21127174/microWaterPump_subcribe");
     }
     else{
@@ -325,7 +378,7 @@ void CN_TuoiNuoc() {
 }
 
 void CN_PhunSuong() {
-  if ((curData.humidity < Max_Humidity)){
+  if ((curData.temperature > Max_Temperature_Day)){
     newStatus.microWaterPump = 1;
     return;
   }
@@ -359,7 +412,7 @@ void CN_ManChe() {
     newStatus.roofTop = 1;
     return;
   }
-  else if ((curData.rain == 0) && (curData.moiser < Min_Moiser)){
+  else if ((curData.rain == 1) && (curData.moiser < Min_Moiser)){
     newStatus.roofTop = 1;
     return;
   }
@@ -391,10 +444,32 @@ void actionManChe() {
   // }
 }
 
-/*
-  Sử dụng màn che
-    4/5 còn TH 4
-  Sử dụng đèn sưởi: PASSED
-  Sử dụng tưới nước: NOT PASSED
-  Sử dụng phun sương: PASSED
-*/
+void sendRequest(){
+  Serial.println("Connectinng to ");
+  Serial.println(host);
+  Serial.println(": ");
+  Serial.println(port_IFTTT);
+
+  WiFiClient client;
+  while (!client.connect(host, port_IFTTT)){
+    Serial.println("connection fail");
+    delay(1000);
+  }
+
+  client.print(("GET ") + String(request) + " HTTP/1.1\r\n" + 
+                "Host: " + host + "\r\n" +
+                "Connection: close\r\n\r\n");
+  delay(500);
+
+  while(client.available()){
+    String line = client.readStringUntil('\R');
+    Serial.println(line);
+  }
+  Serial.println();
+}
+
+void sendMessage(){
+  if((curData.humidity > Max_Humidity) || (curData.temperature > Max_Temperature_Day)){
+    sendRequest();
+  }
+}
