@@ -135,9 +135,9 @@ void setup() {
   Serial.print("Connecting to Wifi");
   wifiConnect();
 
-  //connect mqtt
-  // client.setServer(mqttServer,port);
-  // client.setCallback(mqtt_callback);
+  // connect mqtt
+  client.setServer(mqttServer,port);
+  client.setCallback(mqtt_callback);
 
   LCD.init();
   LCD.backlight();
@@ -158,8 +158,8 @@ void setup() {
 void loop() {
   curTime = millis();
 
-  // mqttReconnect();
-  // client.loop();
+  mqttReconnect();
+  client.loop();
 
   if (curTime - lastTime > 500) {
     //read Sensor data
@@ -174,7 +174,8 @@ void loop() {
     //handle condition of sensor here
     // Serial.printf("%.1f %.1f %d %d %d\n", curData.humidity, curData.temperature, curData.moiser, curData.light, curData.rain);
     lastData = curData;
-    // publishToConsumer();
+    publishToConsumer();
+    writeLCD();
   }
 
   if (newStatus != curStatus) {
@@ -182,7 +183,6 @@ void loop() {
     for (int i = 0; i < 4; ++i) {
       functionalPointers[i]();
     }
-
 
     Serial.printf("OLD MC %d PS %d BN %d DS %d\n", curStatus.roofTop, curStatus.microWaterPump, curStatus.waterPump, curStatus.heatLight);
     Serial.printf("NEW MC %d PS %d BN %d DS %d\n", newStatus.roofTop, newStatus.microWaterPump, newStatus.waterPump, newStatus.heatLight);
@@ -390,7 +390,7 @@ void actionDenSuoi() {
 }
 void actionManChe() {
   // if (curStatus.roofTop) {
-    if (newStatus.roofTop && myStepper.distanceToGo() == 0) {
+    if (newStatus.roofTop) {
       openRainDefender();
     } else {
       closeRainDefender();
