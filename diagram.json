@@ -183,7 +183,7 @@
     [ "drv1:GND.2", "bb1:tn.46", "black", [ "v21.21", "h-8.75" ] ],
     [ "vcc1:VCC", "bb1:tp.1", "", [ "$bb" ] ],
     [ "gnd1:GND", "bb1:tn.1", "", [ "$bb" ] ],
-    [ "ldr1:AO", "esp:D35", "green", [ "h54.45", "v-381.77" ] ]
+    [ "esp:D35", "ldr1:DO", "green", [ "h-79.41", "v194.97", "h-38.34" ] ]
   ],
   "dependencies": {}
 }

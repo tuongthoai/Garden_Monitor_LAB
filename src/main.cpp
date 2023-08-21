@@ -107,7 +107,7 @@ void openRainDefender();
 void closeRainDefender();
 bool isClose(float& a, float& b);
 void readSensorData();
-void writeLCD(uint8_t page);
+void writeLCD();
 
 // functional handling
 void CN_TuoiNuoc();
@@ -136,8 +136,6 @@ void setup() {
 
   LCD.init();
   LCD.backlight();
-  LCD.setCursor(0, 0);
-  LCD.print("Hello world!");
   dhtSensor.setup(P_NhietDoKK, DHTesp::DHT22);
 
   pinMode(P_DoAmDat, INPUT);
@@ -151,11 +149,6 @@ void setup() {
 	myStepper.setAcceleration(100);
 	myStepper.setSpeed(100);
 }
-
-void CN_TuoiNuoc();
-void CN_PhunSuong();
-void CN_DenSuoi();
-void CN_ManChe();
 
 void loop() {
   curTime = millis();
@@ -175,22 +168,27 @@ void loop() {
   
   if (isDiff) {
     //handle condition of sensor here
-    curStatus.waterPump = 1;
-    curStatus.heatLight = 0;
-    curStatus.roofTop = 1;
-    curStatus.microWaterPump = 1;
+    // curStatus.waterPump = 1;
+    // curStatus.heatLight = 0;
+    // curStatus.roofTop = 1;
+    // curStatus.microWaterPump = 1;
 
-    Serial.printf("%d %d %d %d\n", curStatus.roofTop, curStatus.microWaterPump, curStatus.waterPump, curStatus.heatLight);
+    
     lastData = curData;
-    publishToConsumer();
-  }
-
-  if (newStatus != curStatus) {
+    writeLCD();
     // Xu ly cac trang thai cua thiet bi output theo tung chuc nang
     for (int i = 0; i < 4; ++i) {
       functionalPointers[i]();
     }
 
+
+    Serial.printf("OLD MC %d PS %d BN %d DS %d\n", curStatus.roofTop, curStatus.microWaterPump, curStatus.waterPump, curStatus.heatLight);
+    Serial.printf("NEW MC %d PS %d BN %d DS %d\n", newStatus.roofTop, newStatus.microWaterPump, newStatus.waterPump, newStatus.heatLight);
+    Serial.printf("Data AmKK %.1f T* %.1f AmDat %d Mua %d Sang %d\n", curData.humidity, curData.temperature, curData.moiser, curData.rain, curData.light);
+    publishToConsumer();
+  }
+
+  if (newStatus != curStatus) {
     // Tien hanh thay doi trang thai cua cac thiet bi output theo trang thai da tinh toan
     for(int i = 0; i < 4; ++i) {
       actionPointers[i]();
@@ -205,6 +203,8 @@ void loop() {
   if( myStepper.distanceToGo() != 0 ) {
     myStepper.run();
   }
+
+  // delay(1000);
 }
 
 void mqtt_callback(char* topic, byte* payload, uint32_t len){
@@ -250,10 +250,10 @@ void mqttReconnect(){
     Serial.print("Attempting MQTT connection...");
     if(client.connect("21127174")){
       Serial.println("connected");
-      client.subscribe("21127174/microWaterPump/subcribe");
-      client.subscribe("21127174/microWaterPump/subcribe");
-      client.subscribe("21127174/microWaterPump/subcribe");
-      client.subscribe("21127174/microWaterPump/subcribe");
+      client.subscribe("21127174/microWaterPump_subcribe");
+      // client.subscribe("21127174/microWaterPump/subcribe");
+      // client.subscribe("21127174/microWaterPump/subcribe");
+      // client.subscribe("21127174/microWaterPump/subcribe");
     }
     else{
       Serial.println("try again in 5 seconds");
@@ -281,7 +281,7 @@ void readSensorData() {
     curData.humidity = tmp.humidity;
     curData.temperature = tmp.temperature;
     curData.moiser = map(analogRead(P_DoAmDat), 0, 1023, 0, 25);
-    curData.light = digitalRead(P_AnhSang);
+    curData.light = 1 - digitalRead(P_AnhSang);
     curData.rain = digitalRead(P_Mua);
 }
 
@@ -293,17 +293,20 @@ void closeRainDefender() {
   myStepper.moveTo(FULL_CLOSE);
 }
 
-void writeLCD(uint8_t page){
-
+void writeLCD() {
+  LCD.setCursor(0, 0);
+  LCD.print("T\": ");
+  LCD.print(curData.temperature, 1);
+  LCD.print(" *C");
+  LCD.setCursor(0, 1);
+  LCD.print("Humid: ");
+  LCD.print(curData.humidity, 1);
+  LCD.print("%");
+  LCD.setCursor(0, 2);
+  LCD.print("Moiser: ");
+  LCD.print(curData.moiser);
+  LCD.print("%");
 }
-/*
-  // if (myStepper.distanceToGo() == 0) 
-	// 	myStepper.moveTo(-myStepper.currentPosition());
-
-	// // Move the motor one step
-	// myStepper.run();
-  // myStepper.run();
-*/
 
 bool operator==(SensorsData& a, SensorsData& b){
   return (a.rain == b.rain) && (a.moiser == b.moiser) && (a.light == b.light) && isClose(a.temperature, b.temperature) && isClose(a.humidity, b.humidity);
@@ -394,20 +397,20 @@ void actionBomNuoc() {
 }
 void actionPhunSuong() {
   if (curStatus.microWaterPump != newStatus.microWaterPump) {
-    digitalWrite(P_BomNuoc, (newStatus.microWaterPump > 0));
+    digitalWrite(P_PhunSuong, (newStatus.microWaterPump > 0));
   }
 }
 void actionDenSuoi() {
   if (curStatus.heatLight != newStatus.heatLight) {
-    digitalWrite(P_BomNuoc, (newStatus.heatLight > 0));
+    digitalWrite(P_DenSuoi, (newStatus.heatLight > 0));
   }
 }
 void actionManChe() {
-  if (curStatus.roofTop) {
-    if (newStatus.roofTop) {
+  // if (curStatus.roofTop) {
+    if (newStatus.roofTop && myStepper.distanceToGo() == 0) {
       openRainDefender();
     } else {
       closeRainDefender();
     }
-  }
+  // }
 }
