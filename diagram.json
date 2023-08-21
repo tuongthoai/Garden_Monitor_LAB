@@ -72,8 +72,8 @@
     {
       "type": "wokwi-led",
       "id": "led1",
-      "top": -440.64,
-      "left": 30.17,
+      "top": -487.36,
+      "left": 22.16,
       "attrs": { "color": "red" }
     },
     {
@@ -87,8 +87,8 @@
     {
       "type": "wokwi-resistor",
       "id": "r4",
-      "top": -401.19,
-      "left": 75.48,
+      "top": -418.54,
+      "left": 54.12,
       "attrs": { "value": "1" }
     },
     {
@@ -122,7 +122,28 @@
       "rotate": 270,
       "attrs": {}
     },
-    { "type": "wokwi-vcc", "id": "vcc3", "top": -315.97, "left": 439.23, "attrs": {} }
+    { "type": "wokwi-vcc", "id": "vcc3", "top": -315.97, "left": 439.23, "attrs": {} },
+    {
+      "type": "wokwi-led",
+      "id": "led5",
+      "top": -332.44,
+      "left": 164.56,
+      "attrs": { "color": "red" }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led6",
+      "top": -135.17,
+      "left": 584.45,
+      "attrs": { "color": "red" }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led7",
+      "top": 64.78,
+      "left": 567.19,
+      "attrs": { "color": "red" }
+    }
   ],
   "connections": [
     [ "esp:TX0", "$serialMonitor:RX", "", [] ],
@@ -161,7 +182,7 @@
     [ "vcc1:VCC", "bb1:bp.1", "red", [ "v1.68", "h-31.99", "v171.61" ] ],
     [ "gnd1:GND", "bb1:bn.1", "black", [ "v0.22", "h-34.84", "v172.19" ] ],
     [ "led1:A", "r4:1", "green", [ "v0" ] ],
-    [ "r4:2", "relay3:COM", "green", [ "h10.24", "v132.92" ] ],
+    [ "r4:2", "relay3:COM", "green", [ "h4.33", "v47.64" ] ],
     [ "relay3:NC", "vcc1:VCC", "red", [ "h-161.85", "v328.12" ] ],
     [ "led1:C", "bb1:tn.9", "black", [ "v11.18", "h-12.82" ] ],
     [ "relay3:VCC", "bb1:tp.16", "red", [ "v0" ] ],
@@ -181,9 +202,15 @@
     [ "bb1:bn.9", "sw1:1", "black", [ "v0" ] ],
     [ "drv1:VMOT", "vcc3:VCC", "red", [ "v0" ] ],
     [ "drv1:GND.2", "bb1:tn.46", "black", [ "v21.21", "h-8.75" ] ],
+    [ "esp:D35", "ldr1:DO", "green", [ "h-79.41", "v194.97", "h-38.34" ] ],
     [ "vcc1:VCC", "bb1:tp.1", "", [ "$bb" ] ],
     [ "gnd1:GND", "bb1:tn.1", "", [ "$bb" ] ],
-    [ "esp:D35", "ldr1:DO", "green", [ "h-79.41", "v194.97", "h-38.34" ] ]
+    [ "relay3:IN", "led5:A", "green", [ "v20.76", "h73.28" ] ],
+    [ "led5:C", "relay3:GND", "green", [ "v-6.64", "h-66.39" ] ],
+    [ "relay2:IN", "led7:A", "green", [ "h0.92", "v49.95" ] ],
+    [ "led7:C", "relay2:GND", "green", [ "h-17.07", "v-56.75" ] ],
+    [ "relay1:IN", "led6:A", "green", [ "h-12.83", "v-62.72", "h16.06" ] ],
+    [ "led6:C", "relay1:GND", "green", [ "v10.73", "h-19.49", "v56.9" ] ]
   ],
   "dependencies": {}
 }
