@@ -253,9 +253,6 @@ void mqttReconnect(){
     if(client.connect("21127174")){
       Serial.println("connected");
       client.subscribe("21127174/microWaterPump_subcribe");
-      client.subscribe("21127174/microWaterPump_subcribe");
-      client.subscribe("21127174/microWaterPump_subcribe");
-      client.subscribe("21127174/microWaterPump_subcribe");
     }
     else{
       Serial.println("try again in 5 seconds");
