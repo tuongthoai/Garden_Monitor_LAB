@@ -210,19 +210,6 @@ void loop() {
 }
 
 void mqtt_callback(char* topic, byte* payload, uint32_t len){
-  // Serial.print("Message received on topic: ");
-  // Serial.println(topic);
-
-  // Serial.print("Payload: ");
-  // for (int i = 0; i < len; i++) {
-  //   Serial.print((char)payload[i]);
-  // }
-  // Serial.println();
-
-  //Processing topic here
-
-  //Processing msg from node_red here
-
   Serial.print(topic);
   String strMessage;
   for(int  i = 0; i<len; i++){
@@ -233,23 +220,17 @@ void mqtt_callback(char* topic, byte* payload, uint32_t len){
 
 void publishToConsumer() //publish msg to Consumer
 {
-  int temperature = curData.temperature;
-  int humidity = curData.humidity;
-  int moiser = curData.moiser;
-  int light = curData.light;
-  int rain = curData.rain;
-
   char buffer[20];
-  sprintf(buffer, "%d", temperature);
+  sprintf(buffer, "%d", int(curData.temperature));
   client.publish("21127174/temperature",buffer);
 
-  sprintf(buffer, "%d", humidity);
+  sprintf(buffer, "%d", int(curData.humidity));
   client.publish("21127174/humidity",buffer);
 
-  sprintf(buffer, "%d", moiser);
+  sprintf(buffer, "%d", curData.moiser);
   client.publish("21127174/moiser",buffer);
 
-  sprintf(buffer, "%d", rain);
+  sprintf(buffer, "%d", curData.rain);
   client.publish("21127174/rain",buffer);
 
   sprintf(buffer, "%d", curStatus.heatLight);
@@ -260,6 +241,9 @@ void publishToConsumer() //publish msg to Consumer
 
   sprintf(buffer, "%d", curStatus.microWaterPump);
   client.publish("21127174/microWaterPump",buffer);
+
+  sprintf(buffer, "%d", curStatus.roofTop);
+  client.publish("21127174/roofTop",buffer);
 }
 
 //from mqtt to ESP32
@@ -269,9 +253,9 @@ void mqttReconnect(){
     if(client.connect("21127174")){
       Serial.println("connected");
       client.subscribe("21127174/microWaterPump_subcribe");
-      // client.subscribe("21127174/microWaterPump/subcribe");
-      // client.subscribe("21127174/microWaterPump/subcribe");
-      // client.subscribe("21127174/microWaterPump/subcribe");
+      client.subscribe("21127174/microWaterPump_subcribe");
+      client.subscribe("21127174/microWaterPump_subcribe");
+      client.subscribe("21127174/microWaterPump_subcribe");
     }
     else{
       Serial.println("try again in 5 seconds");
@@ -342,39 +326,19 @@ bool operator!=(DeviceStatus& a, DeviceStatus& b) {
 
 void CN_TuoiNuoc() {
   if ((curData.rain == 0) && (curData.moiser < Min_Moiser)){
-    if ((curData.temperature > Max_Temperature_Day) && (curData.light == 1)){
-      newStatus.waterPump == 1;
-    }
-  }
-  else if ((curData.rain == 0) && (curData.moiser < Min_Moiser)){
-    if ((curData.temperature > Max_Temperature_Night) && (curData.light == 0)){
-      newStatus.waterPump == 1; 
-    }
-  }
-  else if((curData.rain == 0) && (curData.moiser < Min_Moiser)){
     newStatus.waterPump == 1;
   }
   else newStatus.waterPump == 0;
 }
 
 void CN_PhunSuong() {
-  if ((curData.humidity < Max_Humidity) && ((curData.rain == 0))){
-    if ((curData.temperature > Max_Temperature_Day) && (curData.light == 1)){
-      newStatus.microWaterPump = 1;
-    }
-    else newStatus.microWaterPump = 0;
+  if ((curData.humidity < Max_Humidity)){
+    newStatus.microWaterPump = 1;
+    return;
   }
   else if ((curData.humidity < Min_Humidity) && ((curData.rain == 0))) {
-    if ((curData.temperature > Max_Temperature_Night) && (curData.light == 0)){
-      newStatus.microWaterPump = 1; 
-    }
-    else newStatus.microWaterPump = 0;
-  }
-  else if (curData.rain == 0){
-    if (curData.humidity < Min_Humidity){
-      newStatus.microWaterPump = 1;
-    }
-    else newStatus.microWaterPump = 0;
+    newStatus.microWaterPump = 1; 
+    return;
   }
   else newStatus.microWaterPump = 0;
 }
@@ -392,18 +356,19 @@ void CN_DenSuoi() {
 void CN_ManChe() {
   if(curData.light == 0){
     newStatus.roofTop = 0;
+    return;
   }
-  else if((curData.light == 1) && (curData.temperature > Max_Temperature_Day)){
-    newStatus.roofTop = 0;
-  }
-  else if ((curData.rain == 1) && (curData.moiser > Max_Moiser)){
-    newStatus.roofTop = 0;
-  }
-  else if((curData.light == 1) && (curData.temperature < Min_Temperature_Day)){
+  else if ((curData.rain == 1) && (curData.light == 1) && (curData.temperature < Max_Temperature_Day) && (curData.temperature > Min_Temperature_Day) && (curData.moiser < Max_Moiser)){
     newStatus.roofTop = 1;
+    return;
   }
-  else if ((curData.rain == 1) && (curData.moiser < Min_Moiser)){
+  else if ((curData.rain == 0) && (curData.light == 1) && (curData.temperature < Min_Temperature_Day)){
     newStatus.roofTop = 1;
+    return;
+  }
+  else if ((curData.rain == 0) && (curData.moiser < Min_Moiser)){
+    newStatus.roofTop = 1;
+    return;
   }
   else newStatus.roofTop = 0;
 }
