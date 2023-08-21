@@ -4,14 +4,7 @@
 #include <AccelStepper.h>
 #include <WiFi.h>
 #include "PubSubClient.h"
-
-#define P_BomNuoc 27
-#define P_PhunSuong 26
-#define P_NhietDoKK 25
-#define P_DoAmDat 33
-#define P_DenSuoi 32
-#define P_AnhSang 35
-#define P_Mua 34
+#include "ThingSpeak.h"
 
 #define Max_Humidity 80
 #define Min_Humidity 60
@@ -21,6 +14,14 @@
 #define Min_Temperature_Night 15
 #define Max_Moiser 70
 #define Min_Moiser 55
+
+#define P_BomNuoc 27
+#define P_PhunSuong 26
+#define P_NhietDoKK 25
+#define P_DoAmDat 33
+#define P_DenSuoi 32
+#define P_AnhSang 35
+#define P_Mua 34
 
 #define I2C_ADDR    0x27
 #define LCD_COLUMNS 20
@@ -45,6 +46,11 @@ const char* password = "";
 const uint16_t port = 1883;
 WiFiClient espClient;
 PubSubClient client(espClient);
+
+//ThingSpeak setting
+const unsigned long channelId = 2245470;
+const char* writeAPI = "CC4W6GQVHGJDBM4F";
+const char* readAPI = "5HUF2J6V10OP77ZX";
 
 // Creates an instance
 AccelStepper myStepper(motorInterfaceType, stepPin, dirPin);
@@ -130,8 +136,7 @@ void setup() {
   wifiConnect();
 
   //connect mqtt
-  client.setServer(mqttServer,port);
-  // mqttReconnect();
+  // client.setServer(mqttServer,port);
   // client.setCallback(mqtt_callback);
 
   LCD.init();
@@ -153,8 +158,7 @@ void setup() {
 void loop() {
   curTime = millis();
 
-  mqttReconnect();
-  client.setCallback(mqtt_callback);
+  // mqttReconnect();
   // client.loop();
 
   if (curTime - lastTime > 500) {
@@ -165,17 +169,15 @@ void loop() {
     isDiff = curData != lastData;
     lastTime = curTime;
   }
-  
+
   if (isDiff) {
     //handle condition of sensor here
-    // curStatus.waterPump = 1;
-    // curStatus.heatLight = 0;
-    // curStatus.roofTop = 1;
-    // curStatus.microWaterPump = 1;
-
-    
+    // Serial.printf("%.1f %.1f %d %d %d\n", curData.humidity, curData.temperature, curData.moiser, curData.light, curData.rain);
     lastData = curData;
-    writeLCD();
+    // publishToConsumer();
+  }
+
+  if (newStatus != curStatus) {
     // Xu ly cac trang thai cua thiet bi output theo tung chuc nang
     for (int i = 0; i < 4; ++i) {
       functionalPointers[i]();
@@ -208,6 +210,19 @@ void loop() {
 }
 
 void mqtt_callback(char* topic, byte* payload, uint32_t len){
+  // Serial.print("Message received on topic: ");
+  // Serial.println(topic);
+
+  // Serial.print("Payload: ");
+  // for (int i = 0; i < len; i++) {
+  //   Serial.print((char)payload[i]);
+  // }
+  // Serial.println();
+
+  //Processing topic here
+
+  //Processing msg from node_red here
+
   Serial.print(topic);
   String strMessage;
   for(int  i = 0; i<len; i++){
@@ -218,17 +233,23 @@ void mqtt_callback(char* topic, byte* payload, uint32_t len){
 
 void publishToConsumer() //publish msg to Consumer
 {
+  int temperature = curData.temperature;
+  int humidity = curData.humidity;
+  int moiser = curData.moiser;
+  int light = curData.light;
+  int rain = curData.rain;
+
   char buffer[20];
-  sprintf(buffer, "%d", int(curData.temperature));
+  sprintf(buffer, "%d", temperature);
   client.publish("21127174/temperature",buffer);
 
-  sprintf(buffer, "%d", int(curData.humidity));
+  sprintf(buffer, "%d", humidity);
   client.publish("21127174/humidity",buffer);
 
-  sprintf(buffer, "%d", curData.moiser);
+  sprintf(buffer, "%d", moiser);
   client.publish("21127174/moiser",buffer);
 
-  sprintf(buffer, "%d", curData.rain);
+  sprintf(buffer, "%d", rain);
   client.publish("21127174/rain",buffer);
 
   sprintf(buffer, "%d", curStatus.heatLight);
@@ -239,9 +260,6 @@ void publishToConsumer() //publish msg to Consumer
 
   sprintf(buffer, "%d", curStatus.microWaterPump);
   client.publish("21127174/microWaterPump",buffer);
-
-  sprintf(buffer, "%d", curStatus.roofTop);
-  client.publish("21127174/roofTop",buffer);
 }
 
 //from mqtt to ESP32
