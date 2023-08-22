@@ -183,7 +183,6 @@
     [ "gnd1:GND", "bb1:bn.1", "black", [ "v0.22", "h-34.84", "v172.19" ] ],
     [ "led1:A", "r4:1", "green", [ "v0" ] ],
     [ "r4:2", "relay3:COM", "green", [ "h4.33", "v47.64" ] ],
-    [ "relay3:NC", "vcc1:VCC", "red", [ "h-161.85", "v328.12" ] ],
     [ "led1:C", "bb1:tn.9", "black", [ "v11.18", "h-12.82" ] ],
     [ "relay3:VCC", "bb1:tp.16", "red", [ "v0" ] ],
     [ "relay3:GND", "bb1:tn.17", "black", [ "v0" ] ],
@@ -203,14 +202,15 @@
     [ "drv1:VMOT", "vcc3:VCC", "red", [ "v0" ] ],
     [ "drv1:GND.2", "bb1:tn.46", "black", [ "v21.21", "h-8.75" ] ],
     [ "esp:D35", "ldr1:DO", "green", [ "h-79.41", "v194.97", "h-38.34" ] ],
-    [ "vcc1:VCC", "bb1:tp.1", "", [ "$bb" ] ],
-    [ "gnd1:GND", "bb1:tn.1", "", [ "$bb" ] ],
     [ "relay3:IN", "led5:A", "green", [ "v20.76", "h73.28" ] ],
     [ "led5:C", "relay3:GND", "green", [ "v-6.64", "h-66.39" ] ],
     [ "relay2:IN", "led7:A", "green", [ "h0.92", "v49.95" ] ],
     [ "led7:C", "relay2:GND", "green", [ "h-17.07", "v-56.75" ] ],
     [ "relay1:IN", "led6:A", "green", [ "h-12.83", "v-62.72", "h16.06" ] ],
-    [ "led6:C", "relay1:GND", "green", [ "v10.73", "h-19.49", "v56.9" ] ]
+    [ "led6:C", "relay1:GND", "green", [ "v10.73", "h-19.49", "v56.9" ] ],
+    [ "vcc1:VCC", "bb1:tp.1", "", [ "$bb" ] ],
+    [ "gnd1:GND", "bb1:tn.1", "", [ "$bb" ] ],
+    [ "bb1:tp.2", "relay3:NO", "red", [ "v-358.82", "h75.6" ] ]
   ],
   "dependencies": {}
 }

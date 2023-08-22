@@ -146,8 +146,8 @@ void setup() {
   wifiConnect();
 
   //connect mqtt
-  // client.setServer(mqttServer,port);
-  // client.setCallback(mqtt_callback);
+  client.setServer(mqttServer,port);
+  client.setCallback(mqtt_callback);
 
   LCD.init();
   LCD.backlight();
@@ -187,17 +187,12 @@ void loop() {
     //handle condition of sensor here
     // Serial.printf("%.1f %.1f %d %d %d\n", curData.humidity, curData.temperature, curData.moiser, curData.light, curData.rain);
     lastData = curData;
-    // publishToConsumer();
-  }
-
-  if (newStatus != curStatus) {
     // Xu ly cac trang thai cua thiet bi output theo tung chuc nang
     for (int i = 0; i < 4; ++i) {
       functionalPointers[i]();
     }
-
-
     writeLCD();
+    publishToConsumer();
 
     if (newStatus != curStatus) {
       // Xu ly cac trang thai cua thiet bi output theo tung chuc nang
@@ -205,23 +200,12 @@ void loop() {
       for (int i = 0; i < 4; ++i) {
         actionPointers[i]();
       }
-    
       // publishToConsumer();
       Serial.printf("OLD MC %d PS %d BN %d DS %d\n", curStatus.roofTop, curStatus.microWaterPump, curStatus.waterPump, curStatus.heatLight);
       Serial.printf("NEW MC %d PS %d BN %d DS %d\n", newStatus.roofTop, newStatus.microWaterPump, newStatus.waterPump, newStatus.heatLight);
+      curStatus = newStatus;
     }
-    publishToConsumer();
     Serial.printf("Data AmKK %.1f T* %.1f AmDat %d Mua %d Sang %d\n", curData.humidity, curData.temperature, curData.moiser, curData.rain, curData.light);
-  }
-
-  if (newStatus != curStatus) {
-    // Tien hanh thay doi trang thai cua cac thiet bi output theo trang thai da tinh toan
-    for(int i = 0; i < 4; ++i) {
-      actionPointers[i]();
-    }
-
-    // Cap nhat lai trang thai hien tai la trang thai da tinh toan
-    curStatus = newStatus;
   }
 
   //handle status of output devices
@@ -298,9 +282,6 @@ void mqttReconnect(){
     Serial.print("Attempting MQTT connection...");
     if(client.connect("21127174")){
       Serial.println("connected");
-      client.subscribe("21127174/microWaterPump_subcribe");
-      client.subscribe("21127174/microWaterPump_subcribe");
-      client.subscribe("21127174/microWaterPump_subcribe");
       client.subscribe("21127174/microWaterPump_subcribe");
     }
     else{
