@@ -63,6 +63,7 @@ AccelStepper myStepper(motorInterfaceType, stepPin, dirPin);
 LiquidCrystal_I2C LCD(I2C_ADDR, LCD_COLUMNS, LCD_LINES);
 DHTesp dhtSensor;
 
+
 struct SensorsData {
   float temperature;
   float humidity;
@@ -107,6 +108,8 @@ void mqttReconnect();
 // MQTT functionality
 void publishToConsumer(); //publish msg to Consumer
 void mqtt_callback(char* topic, byte* payload, uint32_t len);
+bool StringEqual(const char* a, const char* b);
+void receiveFromUI(char* topic);
 
 //global variables
 uint64_t curTime = 0, lastTime = 0;
@@ -230,7 +233,7 @@ void loop() {
   if (ret == 200){
     char buffer[20];
     sprintf(buffer, "%d", int(temp));
-    client.publish("21127174/cloud",buffer);
+    client.publish("cloud",buffer);
   }
   else{
     Serial.println("Unable to read channel");
@@ -246,43 +249,87 @@ void mqtt_callback(char* topic, byte* payload, uint32_t len){
     strMessage += (char)payload[i];
   }
   Serial.println(strMessage);
+  receiveFromUI(topic)
 }
+
+void receiveFromUI(char* topic){
+  if (StringEqual(topic, "microWaterPump_subscribe"))
+  {
+    if (curStatus.microWaterPump == 0) {
+      newStatus.microWaterPump = 1;
+    } 
+    else {
+      newStatus.microWaterPump = 0;
+    }
+  }
+  else if (StringEqual(topic, "waterPump_subscribe"))
+  {
+    if (curStatus.waterPump == 0) {
+      newStatus.waterPump = 1;
+    } 
+    else {
+      newStatus.waterPump = 0;
+    }
+  }
+  else if (StringEqual(topic, "roofTop_subscribe"))
+  {
+    if (curStatus.roofTop == 0) {
+      newStatus.roofTop = 1;
+    } 
+    else {
+      newStatus.roofTop = 0;
+    }
+  }
+  else if (StringEqual(topic, "heatLight_subscribe"))
+  {
+    if (curStatus.heatLight == 0) {
+      newStatus.heatLight = 1;
+    } 
+    else {
+      newStatus.heatLight = 0;
+    }
+  }
+}
+
 
 void publishToConsumer() //publish msg to Consumer
 {
   char buffer[20];
   sprintf(buffer, "%d", int(curData.temperature));
-  client.publish("21127174/temperature",buffer);
+  client.publish("temperature",buffer);
 
   sprintf(buffer, "%d", int(curData.humidity));
-  client.publish("21127174/humidity",buffer);
+  client.publish("humidity",buffer);
 
   sprintf(buffer, "%d", curData.moiser);
-  client.publish("21127174/moiser",buffer);
+  client.publish("moiser",buffer);
 
   sprintf(buffer, "%d", curData.rain);
-  client.publish("21127174/rain",buffer);
+  client.publish("rain",buffer);
 
   sprintf(buffer, "%d", curStatus.heatLight);
-  client.publish("21127174/heatLight",buffer);
+  client.publish("heatLight",buffer);
 
   sprintf(buffer, "%d", curStatus.waterPump);
-  client.publish("21127174/waterPump",buffer);
+  client.publish("waterPump",buffer);
 
   sprintf(buffer, "%d", curStatus.microWaterPump);
-  client.publish("21127174/microWaterPump",buffer);
+  client.publish("microWaterPump",buffer);
 
   sprintf(buffer, "%d", curStatus.roofTop);
-  client.publish("21127174/roofTop",buffer);
+  client.publish("roofTop",buffer);
 }
 
 //from mqtt to ESP32
 void mqttReconnect(){
   while(!client.connected()){
     Serial.print("Attempting MQTT connection...");
-    if(client.connect("21127174")){
+    if(client.connect("GARDENROSE")){
       Serial.println("connected");
-      client.subscribe("21127174/microWaterPump_subcribe");
+      client.subscribe("microWaterPump_subscribe");
+      client.subscribe("roofTop_subscribe");
+      client.subscribe("microWaterPump_subscribe");
+      client.subscribe("microWaterPump_subscribe");
     }
     else{
       Serial.println("try again in 5 seconds");
@@ -453,4 +500,16 @@ void sendMessage(){
   if((curData.humidity > Max_Humidity) || (curData.temperature > Max_Temperature_Day)){
     sendRequest();
   }
+}
+
+bool StringEqual(const char* a, const char* b) // bruh moment :>
+{
+    while (*a != '\0' && *b != '\0') 
+    {
+        if (*a != *b)
+            return false;
+        a++;
+        b++;
+    }
+    return (*a == '\0' && *b == '\0');
 }
