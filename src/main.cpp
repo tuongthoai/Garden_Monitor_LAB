@@ -240,22 +240,22 @@ void loop() {
   // publishToConsumer();
   curStatus = newStatus;
 
-  // if (isDiff) {
-  //   //ThingSpeak
-  //   ThingSpeak.setField(1, curData.temperature);
-  //   ThingSpeak.setField(2, curData.moiser);
-  //   ThingSpeak.setField(3, curData.humidity);
-  //   int ret = ThingSpeak.writeFields(channelId, writeAPI);
-  //   if(ret == 200){
-  //     Serial.println("Successful");
-  //   }
-  //   else{
-  //     Serial.println("Error");
-  //   }
-  // }
+  if (isDiff) {
+    //ThingSpeak
+    ThingSpeak.setField(1, curData.temperature);
+    ThingSpeak.setField(2, curData.moiser);
+    ThingSpeak.setField(3, curData.humidity);
+    int ret = ThingSpeak.writeFields(channelId, writeAPI);
+    if(ret == 200){
+      Serial.println("Successful");
+    }
+    else{
+      Serial.println("Error");
+    }
+  }
 
-  //send fttt
-  // sendMessage();
+  // send fttt
+  sendMessage();
   if (isDiff ) Serial.printf("Data AmKK %.1f T* %.1f AmDat %d Mua %d Sang %d\n", curData.humidity, curData.temperature, curData.moiser, curData.rain, curData.light);
 
   while( myStepper.distanceToGo() != 0 ) {
@@ -263,9 +263,6 @@ void loop() {
   }
 
   publishToConsumer();
-
-  //handle status of output devices
-  //roof motor
 }
 
 void mqtt_callback(char* topic, byte* payload, uint32_t len){
