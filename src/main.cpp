@@ -142,6 +142,12 @@ void (*actionPointers[])() = {actionBomNuoc, actionDenSuoi, actionManChe, action
 void sendRequest();
 void sendMessage();
 
+bool isHandle = 1;
+DeviceStatus callBackSetupStatus;
+uint64_t receiveTimeStamp = -1;
+
+#define ALLOW_USER_ACTIVE_INTERVAL 3000
+
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(115200);
@@ -174,8 +180,8 @@ void setup() {
 void loop() {
   curTime = millis();
 
-  // mqttReconnect();
-  // client.loop();
+  mqttReconnect();
+  client.loop();
 
   if (curTime - lastTime > 500) {
     //read Sensor data
@@ -186,7 +192,7 @@ void loop() {
     lastTime = curTime;
   }
 
-  if (isDiff) {
+  if (true) {
     //handle condition of sensor here
     // Serial.printf("%.1f %.1f %d %d %d\n", curData.humidity, curData.temperature, curData.moiser, curData.light, curData.rain);
     lastData = curData;
@@ -197,16 +203,35 @@ void loop() {
     writeLCD();
     publishToConsumer();
 
-    if (newStatus != curStatus) {
-      // Xu ly cac trang thai cua thiet bi output theo tung chuc nang
-
-      for (int i = 0; i < 4; ++i) {
-        actionPointers[i]();
+    if(receiveTimeStamp != -1 && curTime - receiveTimeStamp <= ALLOW_USER_ACTIVE_INTERVAL){
+      if (callBackSetupStatus.heatLight) {
+        callBackSetupStatus.heatLight = 1 - curStatus.heatLight;
       }
-      // publishToConsumer();
-      Serial.printf("OLD MC %d PS %d BN %d DS %d\n", curStatus.roofTop, curStatus.microWaterPump, curStatus.waterPump, curStatus.heatLight);
-      Serial.printf("NEW MC %d PS %d BN %d DS %d\n", newStatus.roofTop, newStatus.microWaterPump, newStatus.waterPump, newStatus.heatLight);
-      curStatus = newStatus;
+
+      if (callBackSetupStatus.microWaterPump) {
+        callBackSetupStatus.microWaterPump = 1 - curStatus.microWaterPump;
+      }
+
+      if (callBackSetupStatus.waterPump) {
+        callBackSetupStatus.waterPump = 1 - curStatus.waterPump;
+      }
+
+      if (callBackSetupStatus.roofTop) {
+        callBackSetupStatus.roofTop = 1 - curStatus.roofTop;
+      }
+    } 
+
+    if (newStatus != curStatus) {
+        // Xu ly cac trang thai cua thiet bi output theo tung chuc nang
+
+        for (int i = 0; i < 4; ++i) {
+          actionPointers[i]();
+        }
+
+        // publishToConsumer();
+        Serial.printf("OLD MC %d PS %d BN %d DS %d\n", curStatus.roofTop, curStatus.microWaterPump, curStatus.waterPump, curStatus.heatLight);
+        Serial.printf("NEW MC %d PS %d BN %d DS %d\n", newStatus.roofTop, newStatus.microWaterPump, newStatus.waterPump, newStatus.heatLight);
+        curStatus = newStatus;
     }
     Serial.printf("Data AmKK %.1f T* %.1f AmDat %d Mua %d Sang %d\n", curData.humidity, curData.temperature, curData.moiser, curData.rain, curData.light);
   }
@@ -218,106 +243,123 @@ void loop() {
   }
   
   //ThingSpeak
-  ThingSpeak.setField(1, curData.temperature);
-  ThingSpeak.setField(2, curData.moiser);
-  ThingSpeak.setField(3, curData.humidity);
-  int ret = ThingSpeak.writeFields(channelId, writeAPI);
-  if(ret == 200){
-    Serial.println("Successful");
-  }
-  else{
-    Serial.println("Error");
-  }
-  float temp = ThingSpeak.readLongField(channelId, 1, readAPI);
-  ret = ThingSpeak.getLastReadStatus();
-  if (ret == 200){
-    char buffer[20];
-    sprintf(buffer, "%d", int(temp));
-    client.publish("cloud",buffer);
-  }
-  else{
-    Serial.println("Unable to read channel");
-  }
-  sendMessage();
+  // ThingSpeak.setField(1, curData.temperature);
+  // ThingSpeak.setField(2, curData.moiser);
+  // ThingSpeak.setField(3, curData.humidity);
+  // int ret = ThingSpeak.writeFields(channelId, writeAPI);
+  // if(ret == 200){
+  //   Serial.println("Successful");
+  // }
+  // else{
+  //   Serial.println("Error");
+  // }
+  // float temp = ThingSpeak.readLongField(channelId, 1, readAPI);
+  // ret = ThingSpeak.getLastReadStatus();
+  // if (ret == 200){
+  //   char buffer[20];
+  //   sprintf(buffer, "%d", int(temp));
+  //   client.publish("cloud",buffer);
+  // }
+  // else{
+  //   Serial.println("Unable to read channel");
+  // }
+  // sendMessage();
   // delay(1000);
 }
 
 void mqtt_callback(char* topic, byte* payload, uint32_t len){
   Serial.print(topic);
-  String strMessage;
-  for(int  i = 0; i<len; i++){
-    strMessage += (char)payload[i];
-  }
-  Serial.println(strMessage);
-  receiveFromUI(topic)
+  // String strMessage;
+  // for(int  i = 0; i<len; i++){
+  //   strMessage += (char)payload[i];
+  // }
+  // Serial.println(strMessage);
+  receiveTimeStamp = millis();
+  callBackSetupStatus.heatLight=0;
+  callBackSetupStatus.microWaterPump=0;
+  callBackSetupStatus.roofTop=0;
+  callBackSetupStatus.waterPump=0;
+  receiveFromUI(topic);
 }
 
 void receiveFromUI(char* topic){
-  if (StringEqual(topic, "microWaterPump_subscribe"))
+  if (StringEqual(topic, "GARDENROSE/microWaterPump_subscribe"))
   {
-    if (curStatus.microWaterPump == 0) {
-      newStatus.microWaterPump = 1;
-    } 
-    else {
-      newStatus.microWaterPump = 0;
-    }
+    // if (curStatus.microWaterPump == 0) {
+    //   newStatus.microWaterPump = 1;
+    // } 
+    // else {
+    //   newStatus.microWaterPump = 0;
+    // }
+    callBackSetupStatus.microWaterPump = 1;
+    // Serial.printf("STATUS %d", newStatus.microWaterPump);
+    return;
   }
-  else if (StringEqual(topic, "waterPump_subscribe"))
+
+  if (StringEqual(topic, "GARDENROSE/waterPump_subscribe"))
   {
-    if (curStatus.waterPump == 0) {
-      newStatus.waterPump = 1;
-    } 
-    else {
-      newStatus.waterPump = 0;
-    }
+    // if (curStatus.waterPump == 0) {
+    //   newStatus.waterPump = 1;
+    // } 
+    // else {
+    //   newStatus.waterPump = 0;
+    // }
+    callBackSetupStatus.waterPump = 1;
+    return;
   }
-  else if (StringEqual(topic, "roofTop_subscribe"))
+
+  if (StringEqual(topic, "GARDENROSE/roofTop_subscribe"))
   {
-    if (curStatus.roofTop == 0) {
-      newStatus.roofTop = 1;
-    } 
-    else {
-      newStatus.roofTop = 0;
-    }
+    // if (curStatus.roofTop == 0) {
+    //   newStatus.roofTop = 1;
+    // } 
+    // else {
+    //   newStatus.roofTop = 0;
+    // }
+    callBackSetupStatus.roofTop = 1;
+    return;
   }
-  else if (StringEqual(topic, "heatLight_subscribe"))
+
+  if (StringEqual(topic, "GARDENROSE/heatLight_subscribe"))
   {
-    if (curStatus.heatLight == 0) {
-      newStatus.heatLight = 1;
-    } 
-    else {
-      newStatus.heatLight = 0;
-    }
+    // if (curStatus.heatLight == 0) {
+    //   newStatus.heatLight = 1;
+    // } 
+    // else {
+    //   newStatus.heatLight = 0;
+    // }
+
+    callBackSetupStatus.heatLight = 1;
+    return;
   }
 }
-
 
 void publishToConsumer() //publish msg to Consumer
 {
   char buffer[20];
   sprintf(buffer, "%d", int(curData.temperature));
-  client.publish("temperature",buffer);
+  client.publish("GARDENROSE/temperature",buffer);
 
   sprintf(buffer, "%d", int(curData.humidity));
-  client.publish("humidity",buffer);
+  client.publish("GARDENROSE/humidity",buffer);
 
   sprintf(buffer, "%d", curData.moiser);
-  client.publish("moiser",buffer);
+  client.publish("GARDENROSE/moiser",buffer);
 
   sprintf(buffer, "%d", curData.rain);
-  client.publish("rain",buffer);
+  client.publish("GARDENROSE/rain",buffer);
 
   sprintf(buffer, "%d", curStatus.heatLight);
-  client.publish("heatLight",buffer);
+  client.publish("GARDENROSE/heatLight",buffer);
 
   sprintf(buffer, "%d", curStatus.waterPump);
-  client.publish("waterPump",buffer);
+  client.publish("GARDENROSE/waterPump",buffer);
 
   sprintf(buffer, "%d", curStatus.microWaterPump);
-  client.publish("microWaterPump",buffer);
+  client.publish("GARDENROSE/microWaterPump",buffer);
 
   sprintf(buffer, "%d", curStatus.roofTop);
-  client.publish("roofTop",buffer);
+  client.publish("GARDENROSE/roofTop",buffer);
 }
 
 //from mqtt to ESP32
@@ -326,10 +368,10 @@ void mqttReconnect(){
     Serial.print("Attempting MQTT connection...");
     if(client.connect("GARDENROSE")){
       Serial.println("connected");
-      client.subscribe("microWaterPump_subscribe");
-      client.subscribe("roofTop_subscribe");
-      client.subscribe("microWaterPump_subscribe");
-      client.subscribe("microWaterPump_subscribe");
+      client.subscribe("GARDENROSE/heatLight_subscribe");
+      client.subscribe("GARDENROSE/roofTop_subscribe");
+      client.subscribe("GARDENROSE/microWaterPump_subscribe");
+      client.subscribe("GARDENROSE/waterPump_subscribe");
     }
     else{
       Serial.println("try again in 5 seconds");
@@ -400,9 +442,11 @@ bool operator!=(DeviceStatus& a, DeviceStatus& b) {
 
 void CN_TuoiNuoc() {
   if ((curData.rain == 0) && (curData.moiser < Min_Moiser)){
-    newStatus.waterPump == 1;
+    newStatus.waterPump = 1;
+    return ;
   }
-  else newStatus.waterPump == 0;
+  
+  newStatus.waterPump = 0;
 }
 
 void CN_PhunSuong() {
@@ -410,21 +454,24 @@ void CN_PhunSuong() {
     newStatus.microWaterPump = 1;
     return;
   }
-  else if ((curData.humidity < Min_Humidity) && ((curData.rain == 0))) {
+  
+  if ((curData.humidity < Min_Humidity) && ((curData.rain == 0))) {
     newStatus.microWaterPump = 1; 
     return;
   }
-  else newStatus.microWaterPump = 0;
+  newStatus.microWaterPump = 0;
 }
 
 void CN_DenSuoi() {
   if ((curData.temperature < Min_Temperature_Day) && (curData.light == 1)){
     newStatus.heatLight = 1;
+    return;
   }
-  else if((curData.temperature < Min_Temperature_Night) && (curData.light == 0)){
+  if ((curData.temperature < Min_Temperature_Night) && (curData.light == 0)){
     newStatus.heatLight = 1;
+    return;
   }
-  else newStatus.heatLight = 0;
+  newStatus.heatLight = 0;
 }
 
 void CN_ManChe() {
@@ -432,19 +479,19 @@ void CN_ManChe() {
     newStatus.roofTop = 0;
     return;
   }
-  else if ((curData.rain == 1) && (curData.light == 1) && (curData.temperature < Max_Temperature_Day) && (curData.temperature > Min_Temperature_Day) && (curData.moiser < Max_Moiser)){
+  if ((curData.rain == 1) && (curData.light == 1) && (curData.temperature < Max_Temperature_Day) && (curData.temperature > Min_Temperature_Day) && (curData.moiser < Max_Moiser)){
     newStatus.roofTop = 1;
     return;
   }
-  else if ((curData.rain == 0) && (curData.light == 1) && (curData.temperature < Min_Temperature_Day)){
+  if ((curData.rain == 0) && (curData.light == 1) && (curData.temperature < Min_Temperature_Day)){
     newStatus.roofTop = 1;
     return;
   }
-  else if ((curData.rain == 1) && (curData.moiser < Min_Moiser)){
+  if ((curData.rain == 1) && (curData.moiser < Min_Moiser)){
     newStatus.roofTop = 1;
     return;
   }
-  else newStatus.roofTop = 0;
+  newStatus.roofTop = 0;
 }
 
 void actionBomNuoc() {
