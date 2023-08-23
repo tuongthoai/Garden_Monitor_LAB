@@ -143,10 +143,17 @@ void sendRequest();
 void sendMessage();
 
 bool isHandle = 0;
-DeviceStatus callBackSetupStatus;
+DeviceStatus callBackSetupStatus, tmpStatus;
 uint64_t receiveTimeStamp = -1;
 
-#define ALLOW_USER_ACTIVE_INTERVAL 10000
+#define ALLOW_USER_ACTIVE_INTERVAL 5000
+#define WRITE_THINKSPEAK_INTEVERL 1000
+
+uint64_t lastWriteThinkSpeak = 0, cnt = 0;
+
+const String api = ("GET ") + String(request) + " HTTP/1.1\r\n" + 
+                "Host: " + host + "\r\n" +
+                "Connection: close\r\n\r\n";
 
 void setup() {
   // put your setup code here, to run once:
@@ -169,9 +176,9 @@ void setup() {
   pinMode(P_PhunSuong, OUTPUT);
   pinMode(P_DenSuoi, OUTPUT);
 
-  myStepper.setMaxSpeed(1000);
-	myStepper.setAcceleration(100);
-	myStepper.setSpeed(100);
+  myStepper.setMaxSpeed(2000);
+	myStepper.setAcceleration(200);
+	myStepper.setSpeed(500);
 
   //ThingSpeak
   ThingSpeak.begin(TS_client);
@@ -192,101 +199,78 @@ void loop() {
     lastTime = curTime;
   }
 
-  if (true) {
-    //handle condition of sensor here
-    // Serial.printf("%.1f %.1f %d %d %d\n", curData.humidity, curData.temperature, curData.moiser, curData.light, curData.rain);
-    lastData = curData;
-    // Xu ly cac trang thai cua thiet bi output theo tung chuc nang
-    for (int i = 0; i < 4; ++i) {
-      functionalPointers[i]();
-    }
-    writeLCD();
-
-    if(!isHandle && receiveTimeStamp != -1 && curTime - receiveTimeStamp <= ALLOW_USER_ACTIVE_INTERVAL){
-      if (callBackSetupStatus.heatLight) {
-        callBackSetupStatus.heatLight = 1 - curStatus.heatLight;
-      }
-
-      if (callBackSetupStatus.microWaterPump) {
-        callBackSetupStatus.microWaterPump = 1 - curStatus.microWaterPump;
-      }
-
-      if (callBackSetupStatus.waterPump) {
-        callBackSetupStatus.waterPump = 1 - curStatus.waterPump;
-      }
-
-      if (callBackSetupStatus.roofTop) {
-        callBackSetupStatus.roofTop = 1 - curStatus.roofTop;
-      }
-    }
-
-    if ( curTime - receiveTimeStamp <= ALLOW_USER_ACTIVE_INTERVAL ) {
-      if (callBackSetupStatus.heatLight != newStatus.heatLight) {
-        newStatus.heatLight = callBackSetupStatus.heatLight;
-      }
-
-      if (callBackSetupStatus.waterPump != newStatus.waterPump) {
-        newStatus.waterPump = callBackSetupStatus.waterPump;
-      }
-
-      if (callBackSetupStatus.microWaterPump != newStatus.microWaterPump) {
-        newStatus.microWaterPump = callBackSetupStatus.microWaterPump;
-      }
-
-      if (callBackSetupStatus.roofTop != newStatus.roofTop) {
-        newStatus.roofTop = callBackSetupStatus.roofTop;
-      }
-    }
-
-    publishToConsumer();
-
-    if (newStatus != curStatus) {
-        // Xu ly cac trang thai cua thiet bi output theo tung chuc nang
-
-        for (int i = 0; i < 4; ++i) {
-          actionPointers[i]();
-        }
-
-        // publishToConsumer();
-        Serial.printf("OLD MC %d PS %d BN %d DS %d\n", curStatus.roofTop, curStatus.microWaterPump, curStatus.waterPump, curStatus.heatLight);
-        Serial.printf("NEW MC %d PS %d BN %d DS %d\n", newStatus.roofTop, newStatus.microWaterPump, newStatus.waterPump, newStatus.heatLight);
-        curStatus = newStatus;
-
-          //ThingSpeak
-          ThingSpeak.setField(1, curData.temperature);
-          ThingSpeak.setField(2, curData.moiser);
-          ThingSpeak.setField(3, curData.humidity);
-          int ret = ThingSpeak.writeFields(channelId, writeAPI);
-          if(ret == 200){
-            Serial.println("Successful");
-          }
-          else{
-            Serial.println("Error");
-          }
-          //send fttt
-          sendMessage();
-    }
-    Serial.printf("Data AmKK %.1f T* %.1f AmDat %d Mua %d Sang %d\n", curData.humidity, curData.temperature, curData.moiser, curData.rain, curData.light);
+  //handle condition of sensor here
+  // Serial.printf("%.1f %.1f %d %d %d\n", curData.humidity, curData.temperature, curData.moiser, curData.light, curData.rain);
+  lastData = curData;
+  // Xu ly cac trang thai cua thiet bi output theo tung chuc nang
+  for (int i = 0; i < 4; ++i) {
+    functionalPointers[i]();
   }
+
+  writeLCD();
+
+  // Serial.printf("ISHANDLE: %d\n", isHandle);
+  if(!isHandle && curTime - receiveTimeStamp <= ALLOW_USER_ACTIVE_INTERVAL) {
+    ++cnt;
+    if(cnt == 1) tmpStatus = curStatus;
+    if (callBackSetupStatus.heatLight) {
+      newStatus.heatLight = 1 - tmpStatus.heatLight;
+    }
+    if (callBackSetupStatus.waterPump) {
+      newStatus.waterPump = 1 - tmpStatus.waterPump;
+    }
+    if (callBackSetupStatus.microWaterPump) {
+      newStatus.microWaterPump = 1 - tmpStatus.microWaterPump;
+    }
+    if (callBackSetupStatus.roofTop) {
+      newStatus.roofTop = 1 - tmpStatus.roofTop;
+    }
+    // Serial.printf("OLD MC %d PS %d BN %d DS %d\n", curStatus.roofTop, curStatus.microWaterPump, curStatus.waterPump, curStatus.heatLight);
+    // Serial.printf("NEW MC %d PS %d BN %d DS %d\n", newStatus.roofTop, newStatus.microWaterPump, newStatus.waterPump, newStatus.heatLight);
+  } else {
+    isHandle = 1;
+    cnt = 0;
+  }
+
+  // Xu ly cac trang thai cua thiet bi output theo tung chuc nang
+  for (int i = 0; i < 4; ++i) {
+    actionPointers[i]();
+  }
+
+  // publishToConsumer();
+  curStatus = newStatus;
+
+  // if (isDiff) {
+  //   //ThingSpeak
+  //   ThingSpeak.setField(1, curData.temperature);
+  //   ThingSpeak.setField(2, curData.moiser);
+  //   ThingSpeak.setField(3, curData.humidity);
+  //   int ret = ThingSpeak.writeFields(channelId, writeAPI);
+  //   if(ret == 200){
+  //     Serial.println("Successful");
+  //   }
+  //   else{
+  //     Serial.println("Error");
+  //   }
+  // }
+
+  //send fttt
+  // sendMessage();
+  if (isDiff ) Serial.printf("Data AmKK %.1f T* %.1f AmDat %d Mua %d Sang %d\n", curData.humidity, curData.temperature, curData.moiser, curData.rain, curData.light);
+
+  while( myStepper.distanceToGo() != 0 ) {
+    myStepper.run();
+  }
+
+  publishToConsumer();
 
   //handle status of output devices
   //roof motor
-  if( myStepper.distanceToGo() != 0 ) {
-    myStepper.run();
-  }
-  
-
-  delay(1000);
 }
 
 void mqtt_callback(char* topic, byte* payload, uint32_t len){
   Serial.print(topic);
-  // String strMessage;
-  // for(int  i = 0; i<len; i++){
-  //   strMessage += (char)payload[i];
-  // }
-  // Serial.println(strMessage);
-  receiveTimeStamp = millis();
+  receiveTimeStamp = curTime;
   callBackSetupStatus.heatLight=0;
   callBackSetupStatus.microWaterPump=0;
   callBackSetupStatus.roofTop=0;
@@ -296,52 +280,26 @@ void mqtt_callback(char* topic, byte* payload, uint32_t len){
 }
 
 void receiveFromUI(char* topic){
-  if (StringEqual(topic, "GARDENROSE/microWaterPump_subscribe"))
+  if (strcmp(topic, "GARDENROSE/microWaterPump_subscribe") == 0)
   {
-    // if (curStatus.microWaterPump == 0) {
-    //   newStatus.microWaterPump = 1;
-    // } 
-    // else {
-    //   newStatus.microWaterPump = 0;
-    // }
     callBackSetupStatus.microWaterPump = 1;
-    // Serial.printf("STATUS %d", newStatus.microWaterPump);
     return;
   }
 
-  if (StringEqual(topic, "GARDENROSE/waterPump_subscribe"))
+  if (strcmp(topic, "GARDENROSE/waterPump_subscribe")==0)
   {
-    // if (curStatus.waterPump == 0) {
-    //   newStatus.waterPump = 1;
-    // } 
-    // else {
-    //   newStatus.waterPump = 0;
-    // }
     callBackSetupStatus.waterPump = 1;
     return;
   }
 
-  if (StringEqual(topic, "GARDENROSE/roofTop_subscribe"))
+  if (strcmp(topic, "GARDENROSE/roofTop_subscribe")==0)
   {
-    // if (curStatus.roofTop == 0) {
-    //   newStatus.roofTop = 1;
-    // } 
-    // else {
-    //   newStatus.roofTop = 0;
-    // }
     callBackSetupStatus.roofTop = 1;
     return;
   }
 
-  if (StringEqual(topic, "GARDENROSE/heatLight_subscribe"))
+  if (strcmp(topic, "GARDENROSE/heatLight_subscribe")==0)
   {
-    // if (curStatus.heatLight == 0) {
-    //   newStatus.heatLight = 1;
-    // } 
-    // else {
-    //   newStatus.heatLight = 0;
-    // }
-
     callBackSetupStatus.heatLight = 1;
     return;
   }
@@ -417,11 +375,11 @@ void readSensorData() {
 }
 
 void openRainDefender() {
-  myStepper.moveTo(FULL_OPEN);
+  if (myStepper.targetPosition() != FULL_OPEN) myStepper.moveTo(FULL_OPEN);
 }
 
 void closeRainDefender() {
-  myStepper.moveTo(FULL_CLOSE);
+  if (myStepper.targetPosition() != FULL_CLOSE) myStepper.moveTo(FULL_CLOSE);
 }
 
 void writeLCD() {
@@ -533,27 +491,25 @@ void actionManChe() {
 }
 
 void sendRequest(){
-  Serial.println("Connectinng to ");
-  Serial.println(host);
-  Serial.println(": ");
-  Serial.println(port_IFTTT);
+  Serial.println("Connectinng to IFTTT\n");
+  // Serial.println(host);
+  // Serial.println(": ");
+  // Serial.println(port_IFTTT);
 
   WiFiClient client;
   while (!client.connect(host, port_IFTTT)){
     Serial.println("connection fail");
-    delay(1000);
+    delay(100);
   }
 
-  client.print(("GET ") + String(request) + " HTTP/1.1\r\n" + 
-                "Host: " + host + "\r\n" +
-                "Connection: close\r\n\r\n");
-  delay(500);
+  client.print(api);
+  // delay(500);
 
   // while(client.available()){
   //   String line = client.readStringUntil('\R');
   //   Serial.println(line);
   // }
-  Serial.println();
+  // Serial.println();
 }
 
 void sendMessage(){
@@ -562,14 +518,14 @@ void sendMessage(){
   }
 }
 
-bool StringEqual(const char* a, const char* b) // bruh moment :>
-{
-    while (*a != '\0' && *b != '\0') 
-    {
-        if (*a != *b)
-            return false;
-        a++;
-        b++;
-    }
-    return (*a == '\0' && *b == '\0');
-}
+// bool StringEqual(const char* a, const char* b) // bruh moment :>
+// {
+//     while (*a != '\0' && *b != '\0') 
+//     {
+//         if (*a != *b)
+//             return false;
+//         a++;
+//         b++;
+//     }
+//     return (*a == '\0' && *b == '\0');
+// }
