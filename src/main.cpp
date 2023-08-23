@@ -142,11 +142,11 @@ void (*actionPointers[])() = {actionBomNuoc, actionDenSuoi, actionManChe, action
 void sendRequest();
 void sendMessage();
 
-bool isHandle = 1;
+bool isHandle = 0;
 DeviceStatus callBackSetupStatus;
 uint64_t receiveTimeStamp = -1;
 
-#define ALLOW_USER_ACTIVE_INTERVAL 3000
+#define ALLOW_USER_ACTIVE_INTERVAL 10000
 
 void setup() {
   // put your setup code here, to run once:
@@ -201,9 +201,8 @@ void loop() {
       functionalPointers[i]();
     }
     writeLCD();
-    publishToConsumer();
 
-    if(receiveTimeStamp != -1 && curTime - receiveTimeStamp <= ALLOW_USER_ACTIVE_INTERVAL){
+    if(!isHandle && receiveTimeStamp != -1 && curTime - receiveTimeStamp <= ALLOW_USER_ACTIVE_INTERVAL){
       if (callBackSetupStatus.heatLight) {
         callBackSetupStatus.heatLight = 1 - curStatus.heatLight;
       }
@@ -219,7 +218,27 @@ void loop() {
       if (callBackSetupStatus.roofTop) {
         callBackSetupStatus.roofTop = 1 - curStatus.roofTop;
       }
-    } 
+    }
+
+    if ( curTime - receiveTimeStamp <= ALLOW_USER_ACTIVE_INTERVAL ) {
+      if (callBackSetupStatus.heatLight != newStatus.heatLight) {
+        newStatus.heatLight = callBackSetupStatus.heatLight;
+      }
+
+      if (callBackSetupStatus.waterPump != newStatus.waterPump) {
+        newStatus.waterPump = callBackSetupStatus.waterPump;
+      }
+
+      if (callBackSetupStatus.microWaterPump != newStatus.microWaterPump) {
+        newStatus.microWaterPump = callBackSetupStatus.microWaterPump;
+      }
+
+      if (callBackSetupStatus.roofTop != newStatus.roofTop) {
+        newStatus.roofTop = callBackSetupStatus.roofTop;
+      }
+    }
+
+    publishToConsumer();
 
     if (newStatus != curStatus) {
         // Xu ly cac trang thai cua thiet bi output theo tung chuc nang
@@ -232,6 +251,20 @@ void loop() {
         Serial.printf("OLD MC %d PS %d BN %d DS %d\n", curStatus.roofTop, curStatus.microWaterPump, curStatus.waterPump, curStatus.heatLight);
         Serial.printf("NEW MC %d PS %d BN %d DS %d\n", newStatus.roofTop, newStatus.microWaterPump, newStatus.waterPump, newStatus.heatLight);
         curStatus = newStatus;
+
+          //ThingSpeak
+          ThingSpeak.setField(1, curData.temperature);
+          ThingSpeak.setField(2, curData.moiser);
+          ThingSpeak.setField(3, curData.humidity);
+          int ret = ThingSpeak.writeFields(channelId, writeAPI);
+          if(ret == 200){
+            Serial.println("Successful");
+          }
+          else{
+            Serial.println("Error");
+          }
+          //send fttt
+          sendMessage();
     }
     Serial.printf("Data AmKK %.1f T* %.1f AmDat %d Mua %d Sang %d\n", curData.humidity, curData.temperature, curData.moiser, curData.rain, curData.light);
   }
@@ -242,29 +275,8 @@ void loop() {
     myStepper.run();
   }
   
-  //ThingSpeak
-  // ThingSpeak.setField(1, curData.temperature);
-  // ThingSpeak.setField(2, curData.moiser);
-  // ThingSpeak.setField(3, curData.humidity);
-  // int ret = ThingSpeak.writeFields(channelId, writeAPI);
-  // if(ret == 200){
-  //   Serial.println("Successful");
-  // }
-  // else{
-  //   Serial.println("Error");
-  // }
-  // float temp = ThingSpeak.readLongField(channelId, 1, readAPI);
-  // ret = ThingSpeak.getLastReadStatus();
-  // if (ret == 200){
-  //   char buffer[20];
-  //   sprintf(buffer, "%d", int(temp));
-  //   client.publish("cloud",buffer);
-  // }
-  // else{
-  //   Serial.println("Unable to read channel");
-  // }
-  // sendMessage();
-  // delay(1000);
+
+  delay(1000);
 }
 
 void mqtt_callback(char* topic, byte* payload, uint32_t len){
@@ -279,6 +291,7 @@ void mqtt_callback(char* topic, byte* payload, uint32_t len){
   callBackSetupStatus.microWaterPump=0;
   callBackSetupStatus.roofTop=0;
   callBackSetupStatus.waterPump=0;
+  isHandle = 0;
   receiveFromUI(topic);
 }
 
@@ -536,10 +549,10 @@ void sendRequest(){
                 "Connection: close\r\n\r\n");
   delay(500);
 
-  while(client.available()){
-    String line = client.readStringUntil('\R');
-    Serial.println(line);
-  }
+  // while(client.available()){
+  //   String line = client.readStringUntil('\R');
+  //   Serial.println(line);
+  // }
   Serial.println();
 }
 
